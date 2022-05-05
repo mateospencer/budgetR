@@ -13,22 +13,20 @@ library(tidyverse)
 ```
 
 
-```{r asb with manual cat}
+```{r ASB Statement Processing}
 #Reads raw csv and cuts out the stuff ASB adds to the top of the csv
 asb_df = read.csv(file = '~/Desktop/data/asb_cat.csv', skip = 6, header = T, as.is = T)
-# Sets the Date column to a date instead of a factor
+
+#Converts Date to a date data type instead of a factor
 asb_df$Date <- as.Date(asb_df$Date)
 
 # Removes the Unique ID column
 asb_df <- asb_df %>% select(-Unique.Id)
 
-# Adding a Category column to use later for classifying expenses
-# Might not be necessary if this is done manually
+#No longer necessary. Adds a Category column to use later for classifying expenses. 
 #asb_df_withcat <- asb_df %>% add_column(Category = NA)
-
-
 ```
-```{r asb credit card with manual cat}
+```{r ASB Credit Card}
 #Reads raw csv and cuts out the stuff ASB adds to the top of the csv
 asbcc_df = read.csv(file = '~/Desktop/data/asbcc.csv', skip = 4, header = T, as.is = T)
 
@@ -44,17 +42,17 @@ asbcc_df$Date.Processed <- as.Date(asbcc_df$Date.Processed)
 ```
 
 
-```{r hsbc us with manual cat}
+```{r HSBC US}
 hsbcus_df <- read.csv(file = '~/Desktop/data/hsbc_us_cat.csv')
 names(hsbcus_df) <- c("Date", "Description", "Amount", "Balance", "Category")
 ```
 
-```{r hsbc nz with manual cat}
+```{r HSBC NZ}
 hsbcnz_df <- read.csv(file = '~/Desktop/data/hsbc_nz_cat.csv')
 names(hsbcus_df) <- c("Date", "Description", "Amount", "Balance", "Category")
 ```
 
-```{r chase amazon cc with manual cat}
+```{r Chase/Amazon Card}
 chase_df <- read.csv(file = '~/Desktop/data/chase_cat.csv')
 
 # Sets the Trans and Post Date columsn to Date file type instead of factor
@@ -68,7 +66,6 @@ chase_df <- read.csv(file = '~/Desktop/data/chase_cat.csv')
 #    Tran.Type = Category,
 #    Category = Category.1
 #    )
-
 ```
 
 ```{r qa testing}
@@ -92,7 +89,7 @@ combined_deduped
 
 
 
-```{r exchange rate}
+```{r exchange rates}
 library(quantmod)
 from <- c("USD", "NZD")
 to <- c("NZD", "USD")

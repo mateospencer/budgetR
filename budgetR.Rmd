@@ -1,0 +1,153 @@
+---
+title: "Monthly Budget"
+author: "Matthew Spencer"
+date: "11/04/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(tidyverse)
+```
+
+
+```{r asb with manual cat}
+#Reads raw csv and cuts out the stuff ASB adds to the top of the csv
+asb_df = read.csv(file = '~/Desktop/data/asb_cat.csv', skip = 6, header = T, as.is = T)
+# Sets the Date column to a date instead of a factor
+asb_df$Date <- as.Date(asb_df$Date)
+
+# Removes the Unique ID column
+asb_df <- asb_df %>% select(-Unique.Id)
+
+# Adding a Category column to use later for classifying expenses
+# Might not be necessary if this is done manually
+#asb_df_withcat <- asb_df %>% add_column(Category = NA)
+
+
+```
+```{r asb credit card with manual cat}
+#Reads raw csv and cuts out the stuff ASB adds to the top of the csv
+asbcc_df = read.csv(file = '~/Desktop/data/asbcc.csv', skip = 4, header = T, as.is = T)
+
+# Removes the blank line that ASB inserts between table names and data
+asbcc_df <-na.omit(asbcc_df)
+
+# Removes the Unique ID column
+asbcc_df <- asbcc_df %>% select(-Unique.Id)
+
+# Convert Dates to Date format. Note don't asbcc_df$date <- as.Date(asbcc_df$Date.of.Transaction because R doesn't handle it well. It'll look successful but keep the column as a chr. 
+asbcc_df$Date.of.Transaction <- as.Date(asbcc_df$Date.of.Transaction)
+asbcc_df$Date.Processed <- as.Date(asbcc_df$Date.Processed)
+```
+
+
+```{r hsbc us with manual cat}
+hsbcus_df <- read.csv(file = '~/Desktop/data/hsbc_us_cat.csv')
+names(hsbcus_df) <- c("Date", "Description", "Amount", "Balance", "Category")
+```
+
+```{r hsbc nz with manual cat}
+hsbcnz_df <- read.csv(file = '~/Desktop/data/hsbc_nz_cat.csv')
+names(hsbcus_df) <- c("Date", "Description", "Amount", "Balance", "Category")
+```
+
+```{r chase amazon cc with manual cat}
+chase_df <- read.csv(file = '~/Desktop/data/chase_cat.csv')
+
+# Sets the Trans and Post Date columsn to Date file type instead of factor
+# Notice some fields n/a need to look into further!!!!!!!
+#chase_df$Transaction.Date <- as.Date(chase_df$Transaction.Date)
+#chase_df$Post.Date <- as.Date(chase_df$Post.Date)
+
+# Renames existing Category to Tran.Type so not to confuse with manual category of spending. 
+#chase_df %>% 
+#  rename(
+#    Tran.Type = Category,
+#    Category = Category.1
+#    )
+
+```
+
+```{r qa testing}
+library(tidyverse)
+#Note: If any file read returns a 'Incomplete final line' warning after adding category column then open up raw data file and hit enter at end of document and then save it. (Mac)Numbers does weird shit sometimes. Office365 will want to only save file as a xlsx. 
+
+#Need to compare categories across all bank statements
+asb_df = read.csv(file = '~/Desktop/data/asb_copy_withcats.csv', skip = 6, header = T, as.is = T)
+asb_df <- asb_df %>% select(-Unique.Id)
+deduped_asb_cats<-asb_df$Category[!duplicated(asb_df$Category)]
+
+chase_df <- read.csv(file = '~/Desktop/data/chase_cat.csv')
+deduped_chase_cats<-chase_df$Category.1[!duplicated(chase_df$Category.1)]
+deduped_chase_cats
+
+#not working as intended. not sure why more than one column
+mergedData <- merge(deduped_asb_cats, deduped_chase_cats)
+combined_deduped <-mergedData[!duplicated(mergedData)]
+combined_deduped
+```
+
+
+
+```{r exchange rate}
+library(quantmod)
+from <- c("USD", "NZD")
+to <- c("NZD", "USD")
+exchange_calc <-getQuote(paste0(from, to, "=X"))
+
+# Returns current exchange rates between USD and NZD
+USD_to_NZD_rate <-exchange_calc$Last[1]
+NZD_to_USD_rate <-exchange_calc$Last[2]
+
+# Need to find a way to save these rates and assign a date or master currency. 
+# Current rates at time of coding 1.4639000 0.6831068
+
+# Manual Save of Conversion Rates
+# run the following:
+#
+# Sys.Date()
+# USD_to_NZD_rate
+# NZD_to_USD_rate
+#
+# Save these to dates_rates
+# Do this to create a new df: [newmonth]_[year]_rates <- c("YYYY-MONTH_IN_WORDS-DD", [USD_to_NZD_rate], [NZD_to_USD_rate])
+# Bind new data by: dates_rates <- rbind(dates_rates, [newmonth]_[year]_rates) 
+
+# Initialising dates and rates dataframe
+dates_rates <- c("2022-April-11", 1.4639000, 0.6831068)
+names(dates_rates) <- c("Date_of_Conversion", "USD to NZD", "NZD to USD")
+
+# Test creating data to be added
+#april_2222_rates <- c("2222-April-13", 1.50, 0.60)      
+# Test binding data
+#dates_rates <- rbind(dates_rates, april_2222_rates) 
+
+
+USD_to_NZD_fun <- function(x) {
+  NZD <- (x) * (USD_to_NZD_rate)
+  return(NZD)
+  }
+
+NZD_to_USD_fun <- function(x) {
+  USD <- (x) * (NZD_to_USD_rate)
+  return(USD)
+}
+
+# Test Calculation
+#test_price <- 500
+#USD_to_NZD_fun(test_price)
+#NZD_to_USD_fun(test_price)
+```
+
+```{r absolutes}
+#doesn't currently work. could follow the exchange rate model that works above for storing each month's data
+names(absolutes) <- c("mobile", "groceries", "car_ins", "health_ins", "disability_ins", "gas", "life_ins", "daycare", "trash", "internet", "energy", "kellyclub_weekly", "mortgage", "home_ins", "property_tax")
+current_amount_nzd <- c(212, 2500, 242.54, 498.2, 115.86, 120, 220.59, 1436.20, 24.17, 104.95, 504.5, 300, 5582.74, 235.79, 135.81)
+
+df <- data.frame(absolutes, current_amount_nzd)
+df
+
+```
